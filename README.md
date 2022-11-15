@@ -6,7 +6,7 @@
 see readme.pdf 
 
 ## Configure
-Please move this project to BEVDet, replace the old one 
+Please move this project to [BEVDet](https://github.com/HuangJunJie2017/BEVDet), replace the old one 
 ```
 rm -rf ${THIS_PROJECT} ${BEVDet_Path}/mmdet3d/ops/bev_pool
 mv ${THIS_PROJECT} ${BEVDet_Path}/mmdet3d/ops/bev_pool
