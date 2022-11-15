@@ -1,5 +1,8 @@
 # BEV Pooling and BEV Align Source Code 
 
+## Illustration
+see readme.pdf 
+
 ## Configure
 Please move this project to BEVDet, replace the old one 
 ```
