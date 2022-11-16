@@ -1,7 +1,12 @@
 # BEV Pooling and BEV Align Source Code 
+<img width="769" alt="截屏2022-11-15 下午7 31 46" src="https://user-images.githubusercontent.com/25930661/201909423-116c5c92-2605-4e7d-93f6-0fc42fd5fd1c.png">
+
+
+## Illustration
+see readme.pdf 
 
 ## Configure
-Please move this project to BEVDet, replace the old one 
+Please move this project to [BEVDet](https://github.com/HuangJunJie2017/BEVDet), replace the old one 
 ```
 rm -rf ${THIS_PROJECT} ${BEVDet_Path}/mmdet3d/ops/bev_pool
 mv ${THIS_PROJECT} ${BEVDet_Path}/mmdet3d/ops/bev_pool
