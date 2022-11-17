@@ -113,7 +113,7 @@ const int bev_h, const int bev_w)
             { 
               atomicAdd( bev_feat + batch_idx * bev_h * bev_w * c + 
                         channel_idx * bev_h * bev_w + y1 * bev_w + x1 ,
-                        cur_feat_channel_value * wc);
+                        cur_feat_channel_value * wd);
             }
             __threadfence();
         }
@@ -208,14 +208,14 @@ const int bev_h, const int bev_w)
             // top right 
             if (x1 >= 0 && x1 < bev_w && y0 >=0 && y0 < bev_h)
             { 
-              grad_value += bev_feat_grad[batch_idx * bev_h * bev_w * c + channel_idx * bev_h * bev_w + y0 * bev_w + x1] * wb;
+              grad_value += bev_feat_grad[batch_idx * bev_h * bev_w * c + channel_idx * bev_h * bev_w + y0 * bev_w + x1] * wc;
 
             }
 
             // bottom right 
             if (x1 >= 0 && x1 < bev_w && y1 >=0 && y1 < bev_h)
             { 
-              grad_value += bev_feat_grad[batch_idx * bev_h * bev_w * c + channel_idx * bev_h * bev_w + y1 * bev_w + x1] * wb;
+              grad_value += bev_feat_grad[batch_idx * bev_h * bev_w * c + channel_idx * bev_h * bev_w + y1 * bev_w + x1] * wd;
             }
 
 
