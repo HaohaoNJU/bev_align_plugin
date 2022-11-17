@@ -27,7 +27,7 @@ class VoxelAlignFunc(torch.autograd.Function):
         x_grad = bev_pool_ext.voxel_align_backward(
            bev_grad, tensor_geom
         )
-        return x_grad
+        return x_grad,None,None,None
 
 class VoxelPoolFunc(torch.autograd.Function):
     @staticmethod
@@ -50,7 +50,7 @@ class VoxelPoolFunc(torch.autograd.Function):
         x_grad = bev_pool_ext.voxel_pool_backward(
            bev_grad, tensor_geom
         )
-        return x_grad
+        return x_grad,None,None,None
 
 
 
