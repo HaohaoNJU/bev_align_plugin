@@ -54,7 +54,7 @@ img_output_d=59 # img feature map depth channels
 batch_size = 1 # batch size 
 sensor_num = 1 # how many sensors
 volume = torch.randn([batch_size, sensor_num, img_output_d, img_output_h, img_output_w, img_output_c]).float()
-geom_feats = torch.randn([sensor_num,img_output_d, img_output_h, img_output_w,3]) * 30
+geom_feats = torch.randn([batch_size, sensor_num,img_output_d, img_output_h, img_output_w,3]) * 30
 # please strictly follow the above data shape format and data dtype
 output_pool = voxel_pool(volume.cuda(), geom_feats.cuda(), bev_h,bev_w)
 output_align = voxel_align(volume.cuda(), geom_feats.cuda(), bev_h,bev_w)
