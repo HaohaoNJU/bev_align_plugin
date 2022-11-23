@@ -39,7 +39,7 @@ const int bev_h, const int bev_w);
   Function: pillar voxel pooling (forward, cuda)
   Args:
     tensor_volume     :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w,   img_output_c),
-    tensor_geom size  :  (sensor_num, img_output_d, img_output_h, img_output_w ,  3),
+    tensor_geom size  :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w ,  3),
   Return:
     out               :  (batch_size, img_output_c, bev_h, bev_w)
 */
@@ -72,7 +72,7 @@ at::Tensor voxel_pool_forward(
   Function: pillar pooling (backward, cuda)
   Args:
     bev_grad         : input features, FloatTensor[n, c, bev_h, bev_w]
-    geom_feats       : input coordinates, IntTensor[sn, d, fh, fw, 3]
+    geom_feats       : input coordinates, FloatTensor[n, sn, d, fh, fw, 3]
   Return:
     x_grad           : output features, FloatTensor[n, sn, d, fh, fw, c]
 */
@@ -85,10 +85,10 @@ at::Tensor voxel_pool_backward(
   int bev_h = bev_grad.size(2);
   int bev_w = bev_grad.size(3);
 
-  int sn = tensor_geom.size(0);
-  int d = tensor_geom.size(1);
-  int fh = tensor_geom.size(2);
-  int fw = tensor_geom.size(3);
+  int sn = tensor_geom.size(1);
+  int d = tensor_geom.size(2);
+  int fh = tensor_geom.size(3);
+  int fw = tensor_geom.size(4);
 
   const at::cuda::OptionalCUDAGuard device_guard(device_of(bev_grad));
   const float* bev_grad_ = bev_grad.data_ptr<float>();
@@ -109,7 +109,7 @@ at::Tensor voxel_pool_backward(
   Function: pillar voxel align (forward, cuda)
   Args:
     tensor_volume     :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w,   img_output_c),
-    tensor_geom size  :  (sensor_num, img_output_d, img_output_h, img_output_w ,  3),
+    tensor_geom size  :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w ,  3),
   Return:
     out               :  (batch_size, img_output_c, bev_h, bev_w)
 */
@@ -142,7 +142,7 @@ at::Tensor voxel_align_forward(
   Function: pillar pooling (backward, cuda)
   Args:
     bev_grad         : input features, FloatTensor[n, c, bev_h, bev_w]
-    geom_feats       : input coordinates, FloatTensor[sn, d, fh, fw, 3]
+    geom_feats       : input coordinates, FloatTensor[n, sn, d, fh, fw, 3]
   Return:
     x_grad           : output features, FloatTensor[n, sn, d, fh, fw, c]
 */
@@ -155,10 +155,10 @@ at::Tensor voxel_align_backward(
   int bev_h = bev_grad.size(2);
   int bev_w = bev_grad.size(3);
 
-  int sn = tensor_geom.size(0);
-  int d = tensor_geom.size(1);
-  int fh = tensor_geom.size(2);
-  int fw = tensor_geom.size(3);
+  int sn = tensor_geom.size(1);
+  int d = tensor_geom.size(2);
+  int fh = tensor_geom.size(3);
+  int fw = tensor_geom.size(4);
 
   const at::cuda::OptionalCUDAGuard device_guard(device_of(bev_grad));
   const float* bev_grad_ = bev_grad.data_ptr<float>();
