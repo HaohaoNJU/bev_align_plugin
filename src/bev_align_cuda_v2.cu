@@ -31,6 +31,8 @@ const int bev_h, const int bev_w)
         float bev_idx_x = dev_geom[(batch_idx * sn * d * fh * fw + sensor_idx * d * fh * fw + depth_idx * fh * fw + hw_idx) * 3 + 0];
         float bev_idx_y = dev_geom[(batch_idx * sn * d * fh * fw + sensor_idx * d * fh * fw + depth_idx * fh * fw + hw_idx) * 3 + 1];
         float bev_idx_z = dev_geom[(batch_idx * sn * d * fh * fw + sensor_idx * d * fh * fw + depth_idx * fh * fw + hw_idx) * 3 + 2];
+        bev_idx_x -= 0.5;
+        bev_idx_y -= 0.5;
         if (bev_idx_z >=0 && bev_idx_z <1)
         // cur feature is located in the valid bev area 
         { 
@@ -126,6 +128,8 @@ __global__ void voxel_align_v2_grad_kernel(
         if (bev_idx_z >=0 && bev_idx_z <1)
         // cur feature is located in the valid bev area 
         { 
+            bev_idx_x -= 0.5;
+            bev_idx_y -= 0.5;
             int x0 = __float2int_rd(bev_idx_x);
             int y0 = __float2int_rd(bev_idx_y);
             int x1 = x0+1; int y1=y0+1;
