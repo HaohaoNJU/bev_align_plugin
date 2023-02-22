@@ -30,9 +30,175 @@ const int batch_size, const int sensor_num,
 const int img_output_h, const int img_output_w, const int img_output_c, const int img_output_d, 
 const int bev_h, const int bev_w);
 
+// For efficient bev align, wo input volume
+void voxel_align_v2(const float* dev_geom, const float* dev_depth, const float* dev_imgfeat,  float* bev_feat,  
+                   const int bs, const int sn, 
+                   const int fh, const int fw, const int c, const int d, 
+                   const int bev_h, const int bev_w);
+
+void voxel_align_v2_grad(const float* dev_geom, const float* dev_depth, const float* dev_imgfeat,
+                        const float* bev_feat_grad, float* dev_depth_grad, float* dev_imgfeat_grad,  
+                        const int bs, const int sn, 
+                        const int fh, const int fw, const int c, const int d, 
+                        const int bev_h, const int bev_w);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // BEV ALIGN SOURCE CODE
+
+
+/*
+  Function: pillar voxel fast align (forward, cuda)
+  Args:
+    tensor_depth     :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w),
+    tensor_imgfeat   :  (batch_size, sensor_num, img_output_c, img_output_h, img_output_w),
+    tensor_geom size :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w ,  3),
+  Return:
+    out               :  (batch_size, img_output_c, bev_h, bev_w)
+*/
+
+void voxel_align_v2_forward(
+  const at::Tensor tensor_geom,
+  const at::Tensor tensor_depth,
+  const at::Tensor tensor_imgfeat,
+  at::Tensor bev_out,
+  const int bev_h,
+  const int bev_w)
+{
+  int n = tensor_geom.size(0);
+  int sn = tensor_geom.size(1);
+  int d = tensor_geom.size(2);
+  int fh = tensor_geom.size(3);
+  int fw = tensor_geom.size(4);
+  int c = tensor_imgfeat.size(2);
+  const at::cuda::OptionalCUDAGuard device_guard(device_of(tensor_depth));
+  const float* depth_ = tensor_depth.data_ptr<float>();
+  const float* imgfeat_ = tensor_imgfeat.data_ptr<float>();
+  const float* geom_ = tensor_geom.data_ptr<float>();
+  float* out_ = bev_out.data_ptr<float>();
+  voxel_align_v2(
+    geom_, depth_, imgfeat_, out_,  n,sn,   fh,fw,c,d,   bev_h, bev_w
+  );
+}
+
+/*
+  Function: pillar pooling (backward, cuda)
+  Args:
+    tensor_geom      :  input coordinates, FloatTensor[n, sn, d, fh, fw, 3],
+    tensor_depth     :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w),
+    tensor_imgfeat   :  (batch_size, sensor_num, img_output_c, img_output_h, img_output_w),
+    bev_grad         :  input features, FloatTensor[n, c, bev_h, bev_w]
+
+  Return:
+    depth_grad       :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w),
+    imgfeat_grad     :  (batch_size, sensor_num, img_output_c, img_output_h, img_output_w),
+*/
+
+void voxel_align_v2_backward(
+  const at::Tensor tensor_geom,
+  const at::Tensor tensor_depth,
+  const at::Tensor tensor_imgfeat,
+  const at::Tensor bev_grad,
+  at::Tensor depth_grad,
+  at::Tensor imgfeat_grad
+) 
+{
+  int n = bev_grad.size(0);
+  int c = bev_grad.size(1);
+  int bev_h = bev_grad.size(2);
+  int bev_w = bev_grad.size(3);
+
+  int sn = tensor_geom.size(1);
+  int d = tensor_geom.size(2);
+  int fh = tensor_geom.size(3);
+  int fw = tensor_geom.size(4);
+
+  const at::cuda::OptionalCUDAGuard device_guard(device_of(bev_grad));
+  const float* bev_grad_ = bev_grad.data_ptr<float>();
+  const float* geom_ = tensor_geom.data_ptr<float>();
+  const float* depth_ = tensor_depth.data_ptr<float>();
+  const float* imgfeat_ = tensor_imgfeat.data_ptr<float>();
+
+  float* depth_grad_ = depth_grad.data_ptr<float>();
+  float* imgfeat_grad_ = imgfeat_grad.data_ptr<float>();
+
+  voxel_align_v2_grad(
+    geom_, depth_, imgfeat_, 
+    bev_grad_, depth_grad_, imgfeat_grad_,
+
+    n, sn, fh, fw, c, d,   
+    bev_h,bev_w);  
+}
+
+
+
+/*
+  Function: pillar voxel align (forward, cuda)
+  Args:
+    tensor_volume     :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w,   img_output_c),
+    tensor_geom size  :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w ,  3),
+  Return:
+    out               :  (batch_size, img_output_c, bev_h, bev_w)
+*/
+
+at::Tensor voxel_align_forward(
+  const at::Tensor tensor_volume,
+  const at::Tensor tensor_geom,
+  const int bev_h,
+  const int bev_w)
+{
+  int n = tensor_volume.size(0);
+  int sn = tensor_volume.size(1);
+  int d = tensor_volume.size(2);
+  int fh = tensor_volume.size(3);
+  int fw = tensor_volume.size(4);
+  int c = tensor_volume.size(5);
+  const at::cuda::OptionalCUDAGuard device_guard(device_of(tensor_volume));
+  const float* volume_ = tensor_volume.data_ptr<float>();
+  const float* geom_ = tensor_geom.data_ptr<float>();
+  auto options = torch::TensorOptions().dtype(tensor_volume.dtype()).device(tensor_volume.device());
+  at::Tensor out = torch::zeros({n, c, bev_h, bev_w}, options);
+  float* out_ = out.data_ptr<float>();
+  voxel_align(
+    geom_, volume_, out_,  n,sn,   fh,fw,c,d,   bev_h, bev_w
+  );
+  return out;
+}
+
+/*
+  Function: pillar pooling (backward, cuda)
+  Args:
+    bev_grad         : input features, FloatTensor[n, c, bev_h, bev_w]
+    geom_feats       : input coordinates, FloatTensor[n, sn, d, fh, fw, 3]
+  Return:
+    x_grad           : output features, FloatTensor[n, sn, d, fh, fw, c]
+*/
+at::Tensor voxel_align_backward(
+  const at::Tensor bev_grad,
+  const at::Tensor tensor_geom) 
+{
+  int n = bev_grad.size(0);
+  int c = bev_grad.size(1);
+  int bev_h = bev_grad.size(2);
+  int bev_w = bev_grad.size(3);
+
+  int sn = tensor_geom.size(1);
+  int d = tensor_geom.size(2);
+  int fh = tensor_geom.size(3);
+  int fw = tensor_geom.size(4);
+
+  const at::cuda::OptionalCUDAGuard device_guard(device_of(bev_grad));
+  const float* bev_grad_ = bev_grad.data_ptr<float>();
+  const float* geom_ = tensor_geom.data_ptr<float>();
+
+  auto options = torch::TensorOptions().dtype(bev_grad.dtype()).device(bev_grad.device());
+  at::Tensor volume_grad = torch::zeros({n,sn,d,fh,fw,c}, options);
+  float* volume_grad_ = volume_grad.data_ptr<float>();
+  
+  voxel_align_grad(geom_, bev_grad_, volume_grad_,
+  n,sn,  fh,fw,c,d,   bev_h,bev_w);
+  
+  return volume_grad;
+}
 
 
 /*
@@ -104,75 +270,6 @@ at::Tensor voxel_pool_backward(
   return volume_grad;
 }
 
-
-/*
-  Function: pillar voxel align (forward, cuda)
-  Args:
-    tensor_volume     :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w,   img_output_c),
-    tensor_geom size  :  (batch_size, sensor_num, img_output_d, img_output_h, img_output_w ,  3),
-  Return:
-    out               :  (batch_size, img_output_c, bev_h, bev_w)
-*/
-
-at::Tensor voxel_align_forward(
-  const at::Tensor tensor_volume,
-  const at::Tensor tensor_geom,
-  const int bev_h,
-  const int bev_w)
-{
-  int n = tensor_volume.size(0);
-  int sn = tensor_volume.size(1);
-  int d = tensor_volume.size(2);
-  int fh = tensor_volume.size(3);
-  int fw = tensor_volume.size(4);
-  int c = tensor_volume.size(5);
-  const at::cuda::OptionalCUDAGuard device_guard(device_of(tensor_volume));
-  const float* volume_ = tensor_volume.data_ptr<float>();
-  const float* geom_ = tensor_geom.data_ptr<float>();
-  auto options = torch::TensorOptions().dtype(tensor_volume.dtype()).device(tensor_volume.device());
-  at::Tensor out = torch::zeros({n, c, bev_h, bev_w}, options);
-  float* out_ = out.data_ptr<float>();
-  voxel_align(
-    geom_, volume_, out_,  n,sn,   fh,fw,c,d,   bev_h, bev_w
-  );
-  return out;
-}
-
-/*
-  Function: pillar pooling (backward, cuda)
-  Args:
-    bev_grad         : input features, FloatTensor[n, c, bev_h, bev_w]
-    geom_feats       : input coordinates, FloatTensor[n, sn, d, fh, fw, 3]
-  Return:
-    x_grad           : output features, FloatTensor[n, sn, d, fh, fw, c]
-*/
-at::Tensor voxel_align_backward(
-  const at::Tensor bev_grad,
-  const at::Tensor tensor_geom) 
-{
-  int n = bev_grad.size(0);
-  int c = bev_grad.size(1);
-  int bev_h = bev_grad.size(2);
-  int bev_w = bev_grad.size(3);
-
-  int sn = tensor_geom.size(1);
-  int d = tensor_geom.size(2);
-  int fh = tensor_geom.size(3);
-  int fw = tensor_geom.size(4);
-
-  const at::cuda::OptionalCUDAGuard device_guard(device_of(bev_grad));
-  const float* bev_grad_ = bev_grad.data_ptr<float>();
-  const float* geom_ = tensor_geom.data_ptr<float>();
-
-  auto options = torch::TensorOptions().dtype(bev_grad.dtype()).device(bev_grad.device());
-  at::Tensor volume_grad = torch::zeros({n,sn,d,fh,fw,c}, options);
-  float* volume_grad_ = volume_grad.data_ptr<float>();
-  
-  voxel_align_grad(geom_, bev_grad_, volume_grad_,
-  n,sn,  fh,fw,c,d,   bev_h,bev_w);
-  
-  return volume_grad;
-}
 
 
 
@@ -267,14 +364,18 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
         "bev_pool_backward");
 
   // wanghao add 
-  m.def("voxel_pool_forward", &voxel_pool_forward,
-        "voxel_pool_forward");
-  m.def("voxel_pool_backward", &voxel_pool_backward,
-        "voxel_pool_backward");
+  m.def("voxel_align_fast_forward", &voxel_align_v2_forward,
+        "voxel_align_fast_forward");
+  m.def("voxel_align_fast_backward", &voxel_align_v2_backward,
+        "voxel_align_fast_backward");
 
   m.def("voxel_align_forward", &voxel_align_forward,
         "voxel_align_forward");
   m.def("voxel_align_backward", &voxel_align_backward,
         "voxel_align_backward");
 
+  m.def("voxel_pool_forward", &voxel_pool_forward,
+        "voxel_pool_forward");
+  m.def("voxel_pool_backward", &voxel_pool_backward,
+        "voxel_pool_backward");
 }
