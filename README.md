@@ -1,6 +1,6 @@
 # BEV Pooling and BEV Align Source Code 
-<img width="769" alt="截屏2022-11-15 下午7 31 46" src="https://user-images.githubusercontent.com/25930661/201909423-116c5c92-2605-4e7d-93f6-0fc42fd5fd1c.png">
 
+Bev Pooling plays a vital role in BEV-based mono/stereo 3D detection methods like BEVDet/BEVDetph, which directly project 3d obejcts from image view to birds-eye-view according computed indexs. However we note that Bev Pooling suffers from precesion loss when converting float-indexs to quanted ones, therefor two points being assigned to the same voxel may have longer distance than that of points being assigned to different voxels. This project provide a better solution called bev align, that assigning a point to its 4 nearest voxels, and weight its assigned value in every channel according to its distances to the voxels, the whole process is achived in a inverse-bilinear-interpolation way, see the above figure.
 
 ## Illustration
 
