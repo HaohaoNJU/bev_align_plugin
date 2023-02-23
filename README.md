@@ -1,6 +1,10 @@
 # BEV Pooling and BEV Align Source Code 
+<img width="769" alt="Demo" src="docs/demo.png">
 
-Bev Pooling plays a vital role in BEV-based mono/stereo 3D detection methods like BEVDet/BEVDetph, which directly project 3d obejcts from image view to birds-eye-view according computed indexs. However we note that Bev Pooling suffers from precesion loss when converting float-indexs to quanted ones, therefor two points being assigned to the same voxel may have longer distance than that of points being assigned to different voxels. This project provide a better solution called bev align, that assigning a point to its 4 nearest voxels, and weight its assigned value in every channel according to its distances to the voxels, the whole process is achived in a inverse-bilinear-interpolation way, see the above figure.
+
+Bev Pooling plays a vital role in BEV-based mono/stereo 3D detection methods like BEVDet/BEVDetph, which directly project 3d obejcts from image view to birds-eye-view according computed indexs. However we note that Bev Pooling suffers from precesion loss when converting float-indexs to quanted ones, therefore two points being assigned to the same voxel may have longer distance than that of points being assigned to different voxels. 
+
+This project provide a better solution called bev align, that assigning a point to its 4 nearest voxels, and weight its assigned value in every channel according to its distances to the voxels, the whole process is achived in a inverse-bilinear-interpolation way, see the above figure.
 
 ## Illustration
 
@@ -69,7 +73,6 @@ make_cuda_ext(
     ],
 ),
 ```
-
 ## Install 
 
 Then recompiling the bevdet source code 
@@ -79,6 +82,9 @@ cd ${THIS_PROJECT} ${BEVDet_Path}
 pip install -v -e .
 ```
 
+## Updates
+[2023-02-21] support `voxel_align_fast`, which achieves the same result while 4 times faster than the `voxel_align`, it also minimize the gpu memory by a large margin, see the below example .
+ 
 ## Example
 ```
 from mmdet3d.ops import voxel_pool, voxel_align, voxel_align_fast
