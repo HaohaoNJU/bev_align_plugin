@@ -55,9 +55,9 @@ mv ${THIS_PROJECT} ${BEVDet_Path}/mmdet3d/ops/bev_pool
 
 Add import item in `${BEVDet_Path}/mmdet3d/ops/__init__.py` :
 ```
-from .bev_pool.voxel_align import voxel_pool,voxel_align
+from .bev_pool.voxel_align import voxel_pool,voxel_align,voxel_align_fast
 
-__all__.extend(['voxel_align','voxel_pool'])
+__all__.extend(['voxel_align','voxel_pool','voxel_align_fast'])
 ```
 
 Add source file in `${BEVDet_Path}/setup.py` cuda extend item , replace the old one with : 
