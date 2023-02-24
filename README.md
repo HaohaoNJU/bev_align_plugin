@@ -83,7 +83,7 @@ pip install -v -e .
 ```
 
 ## Updates
-[2023-02-21] support `voxel_align_fast`, which achieves the same result while 4 times faster than the `voxel_align`, it also minimize the gpu memory by a large margin, see the below example .
+[2023-02-21] support `voxel_align_fast`, which achieves the same result while 12 times faster than the `voxel_align`, it also minimize the gpu memory by a large margin, see the below example .
  
 ## Example
 ```
