@@ -6,6 +6,7 @@ Bev Pooling plays a vital role in BEV-based mono/stereo 3D detection methods lik
 
 This project provide a better solution called bev align, that assigning a point to its 4 nearest voxels, and weight its assigned value in every channel according to its distances to the voxels, the whole process is achived in a inverse-bilinear-interpolation way, see the above figure.
 
+Experiment show about **2%** mAP boost in our inner val dataset(contains 20515 samples).
 ## Illustration
 
 ### BEV Align :
@@ -83,7 +84,7 @@ pip install -v -e .
 ```
 
 ## Updates
-[2023-02-21] support `voxel_align_fast`, which achieves the same result while 12 times faster than the `voxel_align`, it also minimize the gpu memory by a large margin, see the below example .
+[2023-02-21] support `voxel_align_fast`, which achieves the same result while **12 times faster** than the `voxel_align`, it also minimize the gpu memory by a large margin, see the below example .
  
 ## Example
 ```
